@@ -108,9 +108,9 @@ export class M3u8Data{
             keyfile.fileName = fileName
             keyfile.status = DownloadStatus.Normal_
             if(_.startsWith(fseg.key.uri,'/')){
-                keyfile.url = `${urlObj.origin}1${fseg.key.uri}`
+                keyfile.url = `${urlObj.origin}${fseg.key.uri}`
             }else{
-                keyfile.url = `${preurl}1${fseg.key.uri}`
+                keyfile.url = `${preurl}${fseg.key.uri}`
             }
             self.tsDownloadInfoList.push(keyfile)
         }
