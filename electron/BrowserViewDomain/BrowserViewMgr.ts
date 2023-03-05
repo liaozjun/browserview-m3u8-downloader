@@ -20,7 +20,8 @@ export class BrowserViewMgr {
             }
             let lurl:string = _.toLower(details.url);
             let pos = lurl.indexOf('.m3u8');
-            if(pos != -1){
+            let lpos = lurl.indexOf('localhost:9001')
+            if(pos != -1 && lpos == -1){
                 let bviewDto = self._browserViewDtoList.find(view =>view.browserView_webContents_Id == details.webContentsId)
                 if(bviewDto != null){                    
                     bviewDto._downloadM3u8Index(details.url);

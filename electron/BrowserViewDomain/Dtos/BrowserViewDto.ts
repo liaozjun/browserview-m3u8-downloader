@@ -5,7 +5,7 @@ import { Parser } from 'm3u8-parser'
 import {M3u8Data} from './M3u8Data'
 import * as fsPromise from 'node:fs/promises'
 import { PlayerView } from '../../main/PlayerView'
-
+import {DownloadFileResult} from '../../Dtos/DownloadFileResult'
 export class BrowserViewDto {
     
     private _browserView: BrowserView;
@@ -256,16 +256,7 @@ export class BrowserViewDto {
         }
     }
 }
-class DownloadFileResult{
-    is_success:boolean;
-    msg:string;
-    blob:Buffer;
-    constructor(is_success:boolean,msg:string){
-        this.is_success = is_success;
-        this.msg = msg;
-        this.blob = null;
-    }
-}
+
 class FindM3u8Result{
     is_success:boolean;
     browserView_webContents_Id:number;

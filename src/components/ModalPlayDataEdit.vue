@@ -24,7 +24,7 @@ import {PlayDataEditViewModel} from '../Dtos/PlayDataEditViewModel'
 import { ipcRenderer } from 'electron'
 import { message } from 'ant-design-vue'
 export default defineComponent({
-    name: 'PlayDataEdit',
+    name: 'ModalPlayDataEditM',
     props: {
         playDataEditViewModel: {
             type: PlayDataEditViewModel,

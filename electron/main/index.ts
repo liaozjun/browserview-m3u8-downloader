@@ -1,13 +1,16 @@
 import { app, BrowserWindow, shell, ipcMain,Menu } from 'electron'
 import { release } from 'node:os'
-import { join } from 'node:path'
-
+import { join,basename } from 'node:path'
+import { dialog } from 'electron'
+import * as fsPromise from 'node:fs/promises' 
+import * as npath from 'node:path'
 let appPath:string = app.getAppPath();
 appPath = process.resourcesPath;
 console.log(appPath);
 let myplugin = require(`${appPath}/ivcaddon.node`)
 let _m3u8Service = new myplugin.M3u8Service();
 console.log(myplugin.Setting(JSON.stringify({ isPackaged: false, appPath:appPath})))
+
 
 ipcMain.handle('GetGuid',async(event,args)=>{    
     let guid:string = myplugin.GetGuid();
@@ -18,6 +21,36 @@ ipcMain.handle('InsertOrUpdateM3u8Data',async(event,args)=>{
 })
 ipcMain.handle('DeleteM3u8Data',async(event,args)=>{
     return _m3u8Service.Delete(args)
+})
+ipcMain.handle('showOpenDialog', async (event,args)=>{
+    try{
+        let ret = await dialog.showOpenDialog({ 
+            properties: ['openFile'] ,
+            filters: [
+                { name: 'json', extensions: ['json'] },
+            ]
+        })
+        if(ret.canceled){
+            return null;             
+        }
+        let bname = npath.basename(ret.filePaths[0])
+        console.log(bname)
+        let contents = await fsPromise.readFile(ret.filePaths[0],{ encoding: 'utf8' })        
+        let playList  = JSON.parse(contents)
+        return {basename:bname, playList:playList};
+    } catch (err) {
+        console.error(err.message);
+        return null;
+    }
+})
+ipcMain.handle('ExecuteNonQuery',async(event,args)=>{
+    return myplugin.ExecuteNonQuery(args)
+})
+ipcMain.handle('ExecuteNonQueryRetrunId',async(event,args)=>{
+    return myplugin.ExecuteNonQueryRetrunId(args)
+})
+ipcMain.handle('ExecuteReader',async(event,args)=>{
+    return myplugin.ExecuteReader(args)
 })
 
 import {PlayerView} from '../main/PlayerView';

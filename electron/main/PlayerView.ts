@@ -2,13 +2,22 @@ import _ from 'lodash'
 import { ipcMain } from 'electron'
 import * as fsPromise from 'node:fs/promises';
 import {Setting} from '../Dtos/Setting'
+import {TaskM3u8Dto} from '../Dtos/TaskM3u8Dto'
+import { ePlayJi } from '../Dtos/ePlayJi';
+import {BrowserViewMgr} from '../BrowserViewDomain/BrowserViewMgr'
+import { DownloadStatus } from '../Enums/DownloadStatus';
 export class PlayerView{
     static setting:Setting
     private _m3u8Service:any
+    taskM3u8DtoList:Array<TaskM3u8Dto>
+
     constructor(m3u8Service:any){
         this._m3u8Service = m3u8Service;
-        PlayerView.setting = new Setting();        
+        PlayerView.setting = new Setting();
+        this.taskM3u8DtoList = new Array<TaskM3u8Dto>();
     }
+    
+     delay = ms => new Promise((resolve, reject) => setTimeout(resolve, ms))
     async init():Promise<void>{
         let self = this;
         let val:Setting = await this.getSettingAsync();
@@ -16,7 +25,8 @@ export class PlayerView{
 
         ipcMain.handle('getPlayList', async (event, args) => {
             //console.log('getPlayList args',args);
-            return self.GetPlayList(args.pageIndex,args.pageSize)             
+            let result = self.GetPlayList(args.pageIndex,args.pageSize)
+            return result
         })
         ipcMain.handle('save-setting',async (event,args:Setting)=>{
             //保存配置
@@ -26,7 +36,41 @@ export class PlayerView{
         })
         ipcMain.handle('get-setting',async(event,args)=>{           
             return PlayerView.setting;
-        });
+        });        
+        ipcMain.on('DownloadM3u8FormImport', async (event,args:ePlayJi)=>{            
+            let taskTmp:TaskM3u8Dto = self.taskM3u8DtoList.find(t=>t.id== args.id)
+            if(taskTmp == undefined){
+                let task = new TaskM3u8Dto(args,self._m3u8Service)            
+                self.taskM3u8DtoList.push(task);
+                task.Start()
+            }else{
+                let mainWin = BrowserViewMgr.mainWin;
+                if(taskTmp.FakeThreadAllEnd()){
+                    let normalTsCount = taskTmp.playTsDtoList.filter(item=>item.status == DownloadStatus.Normal_).length
+                    let errorTsCount = taskTmp.playTsDtoList.filter(item=>item.status == DownloadStatus.Error_).length
+                    if(normalTsCount == 0 && errorTsCount != 0){
+                        mainWin.webContents.send('_WorkerReportsBeforeProgress',{
+                            PlayJigId: taskTmp.gId,
+                            PlayJiId: taskTmp.id,
+                            success:false,message:'重新下载失败Ts'
+                        })
+                        taskTmp.Start()                    
+                    }else{
+                        mainWin.webContents.send('_WorkerReportsBeforeProgress',{
+                            PlayJigId: taskTmp.gId,
+                            PlayJiId: taskTmp.id,
+                            success:false,message:'请播放'
+                        })
+                    }
+                }else{
+                    mainWin.webContents.send('_WorkerReportsBeforeProgress',{
+                        PlayJigId: taskTmp.gId,
+                        PlayJiId: taskTmp.id,
+                        success:false,message:'已在队列中'
+                    })
+                }
+            }            
+        })
     }
     public async getSettingAsync(): Promise<Setting>{
         let path = `${process.resourcesPath}/setting.json`
