@@ -22,7 +22,6 @@ export class PlayerView{
         let self = this;
         let val:Setting = await this.getSettingAsync();
         PlayerView.setting.requestTsCountPreM3u8 = val.requestTsCountPreM3u8;
-
         ipcMain.handle('getPlayList', async (event, args) => {
             //console.log('getPlayList args',args);
             let result = self.GetPlayList(args.pageIndex,args.pageSize)
@@ -36,13 +35,21 @@ export class PlayerView{
         })
         ipcMain.handle('get-setting',async(event,args)=>{           
             return PlayerView.setting;
-        });        
-        ipcMain.on('DownloadM3u8FormImport', async (event,args:ePlayJi)=>{            
+        });
+        ipcMain.on('CancelM3u8FormImport', async (event,args:ePlayJi)=>{
+            let taskTmp:TaskM3u8Dto = self.taskM3u8DtoList.find(t=>t.id== args.id)
+            if(taskTmp != null){
+                taskTmp.cancel()
+            }
+        })
+        ipcMain.on('DownloadM3u8FormImport', async (event,args:ePlayJi)=>{
             let taskTmp:TaskM3u8Dto = self.taskM3u8DtoList.find(t=>t.id== args.id)
             if(taskTmp == undefined){
-                let task = new TaskM3u8Dto(args,self._m3u8Service)            
-                self.taskM3u8DtoList.push(task);
-                task.Start()
+                let task = new TaskM3u8Dto(args,self._m3u8Service)
+                let flag:boolean = await task.Start()                
+                if(flag){
+                    self.taskM3u8DtoList.push(task);
+                }
             }else{
                 let mainWin = BrowserViewMgr.mainWin;
                 if(taskTmp.FakeThreadAllEnd()){
@@ -54,7 +61,10 @@ export class PlayerView{
                             PlayJiId: taskTmp.id,
                             success:false,message:'重新下载失败Ts'
                         })
-                        taskTmp.Start()                    
+                        let flag:boolean = await taskTmp.Start()
+                        if(!flag){
+                            _.remove(self.taskM3u8DtoList,t=>t.id=args.id)
+                        }
                     }else{
                         mainWin.webContents.send('_WorkerReportsBeforeProgress',{
                             PlayJigId: taskTmp.gId,

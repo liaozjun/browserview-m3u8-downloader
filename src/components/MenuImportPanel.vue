@@ -16,9 +16,12 @@
                 <a-dropdown :trigger="['contextmenu']">
                     <div>{{pjGroup.name}}</div>
                     <template #overlay>
-                        <a-menu>
-                            <a-menu-item :key="`import:${pjGroup.id}:edit`" @click="onClickGroupEdit(pjGroup)">分组编辑</a-menu-item>
-                            <a-menu-item :key="`import:${pjGroup.id}:delete`" >分组删除</a-menu-item>
+                        <a-menu>                          
+                            <a-menu-item-group title="分组">
+                                <a-menu-item :key="`import:${pjGroup.id}:edit`" @click="onClickGroupEdit(pjGroup)">编辑</a-menu-item>
+                                <a-menu-item :key="`import:${pjGroup.id}:delete`" @click="onClickGroupDelete(pjGroup)">删除</a-menu-item>
+                            </a-menu-item-group>
+                          
                         </a-menu>
                     </template>
                 </a-dropdown>
@@ -28,13 +31,14 @@
                 <a-dropdown :trigger="['contextmenu']">
                     <div>
                         <a-typography-text :type="playJiTitle(pj)">{{ pj.name }}</a-typography-text>
-                        <a-typography-text style="margin-left:50px;" type="secondary">{{pj.reportsProgress}}</a-typography-text>
+                        <a-typography-text style="margin-left:10px;" type="secondary">{{pj.reportsProgress}}</a-typography-text>
                     </div> 
                     <template #overlay>
                         <a-menu>
                             <a-menu-item :key="`import:${pjGroup.id}:${pj.id}:download`" @click="onClickDownload(pj)">下载</a-menu-item>
+                            <a-menu-item :key="`import:${pjGroup.id}:${pj.id}:cancel`" @click="onClickCancel(pj)">取消下载</a-menu-item>
                             <a-menu-item :key="`import:${pjGroup.id}:${pj.id}:edit`" @click="onClickEdit(pj)">编辑</a-menu-item>
-                            <a-menu-item :key="`import:${pjGroup.id}:${pj.id}:delete`" >删除</a-menu-item>
+                            <a-menu-item :key="`import:${pjGroup.id}:${pj.id}:delete`" @click="onClickDelete(pj)">删除</a-menu-item>
                         </a-menu>
                     </template>
                 </a-dropdown>
@@ -62,11 +66,11 @@
 </template>
 
 <script lang="ts">
-    import { defineComponent,ref,reactive,onMounted,toRaw } from 'vue'
-    import { AppstoreOutlined} from '@ant-design/icons-vue'
+    import { defineComponent,ref,reactive,onMounted,toRaw,createVNode } from 'vue'
+    import { AppstoreOutlined,ExclamationCircleOutlined} from '@ant-design/icons-vue'
     import { ipcRenderer } from 'electron'
     import {PlayJi} from '../Dtos/PlayJi'
-    import { message } from 'ant-design-vue'
+    import { message,Modal } from 'ant-design-vue'
     import { Utils } from '../Utils'
     import { PlayJiGroup } from '../Dtos/PlayJiGroup'
 import { DownloadStatus } from '../Enums/DownloadStatus'
@@ -199,10 +203,68 @@ import { DownloadStatus } from '../Enums/DownloadStatus'
                 defaultEditViewModel.formState = pjGroup
                 defaultEditViewModel.visiable = true
             }
+            const onClickGroupDelete = async (pjGroup:PlayJiGroup)=>{
+                let playJiList:Array<PlayJi>  = await Utils.GetPlayJiList(pjGroup.id)
+                let childInfo:string = ''
+                if(playJiList.length>0){
+                    childInfo = `分组下有${playJiList.length}个视频,`;
+                }
+                Modal.confirm({
+                    title: `注意删除分组(${pjGroup.id})`,
+                    icon: createVNode(ExclamationCircleOutlined),
+                    content: createVNode('div', { style: 'color:red;' }, `${childInfo}是否删除,(${pjGroup.name})`),
+                    okText:'确定',
+                    cancelText:'取消',
+                    async onOk() {
+                        for(let pjIndex in playJiList){
+                            let pj:PlayJi = playJiList[pjIndex];
+                            await ipcRenderer.invoke('DeleteDir',{folder_name: pj.folder_name})
+                            let ret = await Utils.DeletePlayJi(pj.id)
+                            if(ret <= 0){
+                                message.success(`删除'${pj.name}'错误,请重试!`,10);
+                                return ;
+                            }
+                        }
+                        let effrow = await Utils.DeletePlayJiGroup(pjGroup.id);
+                        if(effrow > 0){
+                            _.remove(playJiGroupList.value,(g:PlayJiGroup)=>g.id == pjGroup.id)
+                            message.success('删除成功');
+                        }
+                    },
+                    onCancel() {
+                        console.log('Cancel');
+                    },
+                    
+                });
+            }
             const onClickEdit = (pj:PlayJi)=>{
                 defaultEditViewModel.type = DefaultEditViewModel.TypePlayJi
                 defaultEditViewModel.formState = pj
                 defaultEditViewModel.visiable = true
+            }
+            const onClickDelete = (pj:PlayJi)=>{                
+                Modal.confirm({
+                    title: `注意(${pj.id})`,
+                    icon: createVNode(ExclamationCircleOutlined),
+                    content: createVNode('div', { style: 'color:red;' }, `是否删除,(${pj.name})`),
+                    okText:'确定',
+                    cancelText:'取消',
+                    async onOk() {
+                        await ipcRenderer.invoke('DeleteDir',{folder_name:pj.folder_name})
+                        let ret = await Utils.DeletePlayJi(pj.id)
+                        if(ret >0){
+                            let group:PlayJiGroup = _.find(playJiGroupList.value,(g:PlayJiGroup)=>g.id==pj.gId);
+                            if(group != undefined){
+                                _.remove(group.playJiList,(p:PlayJi)=>p.id == pj.id)
+                                message.success('删除成功');
+                            }
+                        }
+                    },
+                    onCancel() {
+                        console.log('Cancel');
+                    },
+                    
+                });
             }
             const onFinish = async (values: any) => {            
                 try{
@@ -218,9 +280,12 @@ import { DownloadStatus } from '../Enums/DownloadStatus'
                 }catch(err:any){
                     message.error(err.message)
                 }
-            };
-
+            }
             const onFinishFailed = (errorInfo: any) => {
+            }
+            const onClickCancel = async (pj:PlayJi)=>{
+                ipcRenderer.send('CancelM3u8FormImport',toRaw(pj))
+                console.log('onClickDownload')
             }
             const onClickDownload = async (pj:PlayJi) =>{                
                 ipcRenderer.send('DownloadM3u8FormImport',toRaw(pj))
@@ -255,8 +320,11 @@ import { DownloadStatus } from '../Enums/DownloadStatus'
                 defaultEditViewModel,
 
                 onClickGroupEdit,
+                onClickGroupDelete,
                 onClickEdit,
                 onClickDownload,
+                onClickCancel,
+                onClickDelete,
             };
         },
     });

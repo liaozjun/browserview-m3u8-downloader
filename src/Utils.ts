@@ -33,6 +33,10 @@ export class Utils{
         let sql:string = `update PlayJiGroup set name = '${pjGroup.name}' where id = ${pjGroup.id};`
         return await ipcRenderer.invoke('ExecuteNonQuery',{sql:sql})
     }
+    static async DeletePlayJiGroup(pjGroupId:number):Promise<number>{
+        let sql:string = `delete from PlayJiGroup where id = ${pjGroupId};`
+        return await ipcRenderer.invoke('ExecuteNonQuery',{sql:sql})
+    }
     //PlayJi/////////////////////////////////////////
     static async InsertPlayJi(playJi:PlayJi):Promise<PlayJi>{
         let sql:string = `INSERT INTO "main"."PlayJi" ("player", "name", "url", "status", "gId", "folder_name") 
@@ -53,6 +57,10 @@ export class Utils{
     }
     static async UpdatePlayJiStatus(playJiId:number,status:DownloadStatus):Promise<PlayJi>{
         let sql:string = `update PlayJi set status = ${status} where id = ${playJiId};`
+        return await ipcRenderer.invoke('ExecuteNonQuery',{sql:sql})
+    }
+    static async DeletePlayJi(playJiId:number):Promise<number>{
+        let sql:string = `delete from PlayJi where id = ${playJiId} ;`
         return await ipcRenderer.invoke('ExecuteNonQuery',{sql:sql})
     }
 }

@@ -11,9 +11,12 @@ let myplugin = require(`${appPath}/ivcaddon.node`)
 let _m3u8Service = new myplugin.M3u8Service();
 console.log(myplugin.Setting(JSON.stringify({ isPackaged: false, appPath:appPath})))
 
-
+ipcMain.handle('DeleteDir',async (event,args)=>{
+    let dir:string = `${process.resourcesPath}/m3u8/${args.folder_name}/`
+    _m3u8Service.DeleteDir(dir)
+})
 ipcMain.handle('GetGuid',async(event,args)=>{    
-    let guid:string = myplugin.GetGuid();
+    let guid:string = myplugin.GetGuid()
     return guid;
 })
 ipcMain.handle('InsertOrUpdateM3u8Data',async(event,args)=>{
