@@ -88,15 +88,21 @@ export class BrowserViewMgr {
             let errTs = bview.m3u8Data.filterErrorTs();
             if(errTs.length == 0){
                 //有错误ts 重新载 
-                let indexm3u8all =  bview.m3u8Data.dumpM3u8Index()         
+                if(args.title.length > 200){
+                    args.title = args.title.substring(0,200);
+                }
+                let indexm3u8all =  bview.m3u8Data.dumpM3u8Index()
                 let insertOrUpdateM3u8DataInput ={
                     name: args.title, 
                     origin_url: bview.m3u8Data.url, 
                     status: 0,
                     indexm3u8all:indexm3u8all.join("\r\n"),
+                    gId:0,
                 }
                 //下载m3u8 保存到sqlite
-                let result = self._m3u8ServiceAddon.InsertOrUpdateM3u8Data(JSON.stringify(insertOrUpdateM3u8DataInput));
+                //console.log(JSON.stringify(insertOrUpdateM3u8DataInput))
+                let s = JSON.stringify(insertOrUpdateM3u8DataInput)
+                let result = self._m3u8ServiceAddon.InsertOrUpdateM3u8Data(s);
                 if(result.effRow <= 0){
                     throw `InsertOrUpdateM3u8Data effRow <= 0: ${result.msg}`
                 }

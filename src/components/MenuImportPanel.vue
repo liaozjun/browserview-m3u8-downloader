@@ -1,11 +1,11 @@
 <template>
     <div>
-        <a-space size="0">
-            <a-button type="Default" :loading="importBtn.loading" size="small"  @click="onClickImport">{{importBtn.txt}}</a-button>
+        <!-- <a-space size="0"> -->
+            <a-button type="Default" block :loading="importBtn.loading" size="small"  @click="onClickImport">{{importBtn.txt}}</a-button>
              <!-- <a-button size="small" @click="testClick">Default</a-button> -->
             <!--<a-button type="Default" size="small">Dashed</a-button>
             <a-button type="Default" size="small">Link</a-button> -->
-        </a-space>
+        <!-- </a-space> -->
     </div>
     <a-menu v-model:selectedKeys="selectedPlayData" style="height:calc(100vh - 46px - 40px - 36px - 24px);background: white;overflow: auto;overflow-y:auto;" mode="inline">
         <a-sub-menu v-for="pjGroup in playJiGroupList" :key="`import:${pjGroup.id}`"  @titleClick="titleClick(pjGroup)">
@@ -31,7 +31,7 @@
                 <a-dropdown :trigger="['contextmenu']">
                     <div>
                         <a-typography-text :type="playJiTitle(pj)">{{ pj.name }}</a-typography-text>
-                        <a-typography-text style="margin-left:10px;" type="secondary">{{pj.reportsProgress}}</a-typography-text>
+                        <a-typography-text style="margin-left:10px;"  type="secondary">{{pj.reportsProgress}}</a-typography-text>
                     </div> 
                     <template #overlay>
                         <a-menu>
@@ -39,6 +39,7 @@
                             <a-menu-item :key="`import:${pjGroup.id}:${pj.id}:cancel`" @click="onClickCancel(pj)">取消下载</a-menu-item>
                             <a-menu-item :key="`import:${pjGroup.id}:${pj.id}:edit`" @click="onClickEdit(pj)">编辑</a-menu-item>
                             <a-menu-item :key="`import:${pjGroup.id}:${pj.id}:delete`" @click="onClickDelete(pj)">删除</a-menu-item>
+                            <a-menu-item :disabled="ComputedCombineTsMenuItemDisabled(pj)" :key="`import:${pjGroup.id}:${pj.id}:delete`" @click="onClickCombineTs(pj)">合拼mp4</a-menu-item>
                         </a-menu>
                     </template>
                 </a-dropdown>
@@ -73,9 +74,10 @@
     import { message,Modal } from 'ant-design-vue'
     import { Utils } from '../Utils'
     import { PlayJiGroup } from '../Dtos/PlayJiGroup'
-import { DownloadStatus } from '../Enums/DownloadStatus'
+    import { DownloadStatus } from '../Enums/DownloadStatus'
+    import {combine_ts_mp4_reply} from '../Dtos/combine_ts_mp4_reply'
     var moment = require('moment');
-   
+    import * as fs from 'node:fs'
     const _ = require('lodash')
     export default defineComponent({
         name: 'MenuImportPanel',        
@@ -143,34 +145,56 @@ import { DownloadStatus } from '../Enums/DownloadStatus'
                         
                     }
                 })
+                ipcRenderer.on('combine_ts_mp4_reply',(event,args:combine_ts_mp4_reply)=>{
+                    let group:PlayJiGroup = _.find(playJiGroupList.value,(g:PlayJiGroup)=>g.id == args.playJiGroupId)
+                    if(group != undefined){
+                        let ji:PlayJi = _.find(group.playJiList,(ji:PlayJi)=>ji.id == args.playJiId)
+                        if(ji != undefined){
+                            if(args.isEnd){
+                                ji.reportsProgress = '转换结束'
+                                if(args.isError){
+                                    ji.reportsProgress = args.message
+                                }
+                            }else{
+                                ji.reportsProgress = '转换中'
+                            }
+                        }
+                    }
+                    if(args.isEnd && !_.isEmpty(args.openDir)){
+                        //fs.opendirSync(args.openDir)
+                        //这里测试
+                        ipcRenderer.invoke('openDir',args.openDir)
+                    }
+                })
             })
             const importBtn = reactive<ImportBtn>(new ImportBtn())
             const playJiGroupList = ref<PlayJiGroup[]>([])
             const defaultEditViewModel = reactive<DefaultEditViewModel>(new DefaultEditViewModel())
 
-            const handleOk = ()=>{
-                
+            const handleOk = ()=>{                
             }
             const onClickImport = async()=>{
                 try{
                     importBtn.import()
                     //带出名字
                     let ret:{basename:string,playList:Array<PlayJi>} = await ipcRenderer.invoke('showOpenDialog',null)
-                    let seq = moment().format("YYYYMMDDHHmmss")
-                    let basename = ret.basename.split('.')[0]
-                    let playJiGroup:PlayJiGroup = await Utils.InsertPlayJiGroup(`${basename}_${seq}`,basename)
-                    await Promise.all(ret.playList.map( async item => {                        
-                        let playJi = new PlayJi();
-                        playJi.gId = playJiGroup.id
-                        playJi.name = item.name
-                        playJi.player = item.player
-                        playJi.url = item.url
-                        playJi.folder_name = await Utils.GetGuid()
-                        await Utils.InsertPlayJi(playJi)
-                        playJiGroup.playJiList.push(playJi)
-                    }))
-                    playJiGroupList.value.push(playJiGroup)
-                    playJiGroupList.value = _.orderBy(playJiGroupList.value, ['id'], ['desc'])
+                    if(ret != null){
+                        let seq = moment().format("YYYYMMDDHHmmss")
+                        let basename = ret.basename.split('.')[0]
+                        let playJiGroup:PlayJiGroup = await Utils.InsertPlayJiGroup(`${basename}_${seq}`,basename)
+                        await Promise.all(ret.playList.map( async item => {                        
+                            let playJi = new PlayJi();
+                            playJi.gId = playJiGroup.id
+                            playJi.name = item.name
+                            playJi.player = item.player
+                            playJi.url = item.url
+                            playJi.folder_name = await Utils.GetGuid()
+                            await Utils.InsertPlayJi(playJi)
+                            playJiGroup.playJiList.push(playJi)
+                        }))
+                        playJiGroupList.value.push(playJiGroup)
+                        playJiGroupList.value = _.orderBy(playJiGroupList.value, ['id'], ['desc'])
+                    }
                 }catch(err){
                     message.error(JSON.stringify(err))
                     
@@ -303,6 +327,17 @@ import { DownloadStatus } from '../Enums/DownloadStatus'
                 }
                 return 'default'
             }
+            const onClickCombineTs = (pj:PlayJi)=>{
+                let group = _.find(playJiGroupList.value,(g:PlayJiGroup) => g.id == pj.gId);
+                if(group != undefined){
+                    let pjTmp = toRaw(pj)
+                    pjTmp.groupName = group.name;
+                    ipcRenderer.invoke('combine_ts_mp4',pjTmp)
+                }                
+            }
+            const ComputedCombineTsMenuItemDisabled = (pj:PlayJi)=>{
+                return pj.status != DownloadStatus.Finish_
+            }
             return {
                 playJiTitle,
                 onFinish,
@@ -325,6 +360,9 @@ import { DownloadStatus } from '../Enums/DownloadStatus'
                 onClickDownload,
                 onClickCancel,
                 onClickDelete,
+
+                onClickCombineTs,
+                ComputedCombineTsMenuItemDisabled,
             };
         },
     });

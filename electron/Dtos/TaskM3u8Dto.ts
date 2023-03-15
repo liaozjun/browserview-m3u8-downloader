@@ -56,7 +56,7 @@ export class TaskM3u8Dto extends ePlayJi {
             //let om3u8filepath:string = `${dir}oindex.m3u8`
             let lom3u8filepath:string = `${dir}index.m3u8`
 
-            let is_lm3u8Exist = fs.statSync(lom3u8filepath,{throwIfNoEntry :false})        
+            let is_lm3u8Exist = fs.statSync(lom3u8filepath,{throwIfNoEntry :false})
             if(is_lm3u8Exist == undefined){//不存在下载            
                 mainWin.webContents.send('_WorkerReportsBeforeProgress',{
                     PlayJigId: self.gId,

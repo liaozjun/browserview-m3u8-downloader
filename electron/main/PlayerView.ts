@@ -1,11 +1,13 @@
 import _ from 'lodash'
 import { ipcMain } from 'electron'
-import * as fsPromise from 'node:fs/promises';
+import * as fsPromise from 'node:fs/promises'
 import {Setting} from '../Dtos/Setting'
 import {TaskM3u8Dto} from '../Dtos/TaskM3u8Dto'
-import { ePlayJi } from '../Dtos/ePlayJi';
+import { ePlayJi } from '../Dtos/ePlayJi'
 import {BrowserViewMgr} from '../BrowserViewDomain/BrowserViewMgr'
-import { DownloadStatus } from '../Enums/DownloadStatus';
+import { DownloadStatus } from '../Enums/DownloadStatus'
+const { spawn } = require('node:child_process')
+import * as fs from 'node:fs'
 export class PlayerView{
     static setting:Setting
     private _m3u8Service:any
@@ -79,6 +81,84 @@ export class PlayerView{
                         success:false,message:'已在队列中'
                     })
                 }
+            }            
+        })
+        ipcMain.handle('combine_ts_mp4',(event,args1:{id:number
+            player:string
+            name:string
+            url:string
+            status:DownloadStatus
+            gId:number
+            groupName:string
+            folder_name:string
+            reportsProgress:string})=>{
+            let mainWin = BrowserViewMgr.mainWin;
+            let ffmpegPath = `${process.resourcesPath}\\ffmpeg.exe`
+            let path = `${process.resourcesPath}\\m3u8\\${args1.folder_name}\\index.m3u8`;
+                let outputDir = `${process.resourcesPath}\\Output\\${args1.groupName}\\`
+                let outputFile = `${outputDir}${args1.name}.mp4`
+                this._m3u8Service.DirNotExistCreate(outputDir)
+            try{
+                
+                let cmd = ffmpegPath
+                let args = [
+                    '-allowed_extensions', 'ALL',
+                    '-protocol_whitelist', 'file,http,crypto,tcp',            
+                    '-i', path,           
+                    '-y', '-c','copy',outputFile,
+                ]
+
+                let is_lm3u8Exist = fs.statSync(outputFile,{throwIfNoEntry :false})        
+                if(is_lm3u8Exist == undefined){//不存在下载
+                    let proc = spawn(cmd, args);    
+                    proc.stdout.on('data', function(data) {
+                        mainWin.webContents.send('combine_ts_mp4_reply',{
+                            playJiId:args1.id,
+                            playJiGroupId:args1.gId,
+                            isEnd:false,
+                            isError:false,
+                            message: ''
+                        })
+                    });
+                    proc.stderr.setEncoding("utf8")
+                    proc.stderr.on('data', function(data) {
+                        mainWin.webContents.send('combine_ts_mp4_reply',{
+                            playJiId:args1.id,
+                            playJiGroupId:args1.gId,
+                            isEnd:false,
+                            isError:false,
+                            message: ''
+                        })
+                    });
+                    proc.on('close', function() {
+                        mainWin.webContents.send('combine_ts_mp4_reply',{
+                            playJiId:args1.id,
+                            playJiGroupId:args1.gId,
+                            isEnd:true,
+                            isError:false,
+                            message: '',
+                            openDir:outputFile
+                        })
+                    });
+                }else{
+                    mainWin.webContents.send('combine_ts_mp4_reply',{
+                        playJiId:args1.id,
+                        playJiGroupId:args1.gId,
+                        isEnd:true,
+                        isError:true,
+                        openDir:outputFile,
+                        message: '已经存在'
+                    })
+                }
+            }catch(err){
+                mainWin.webContents.send('combine_ts_mp4_reply',{
+                    playJiId:args1.id,
+                    playJiGroupId:args1.gId,
+                    isEnd:true,
+                    isError:true,
+                    openDir:outputFile,
+                    message: JSON.stringify(err)
+                })
             }            
         })
     }

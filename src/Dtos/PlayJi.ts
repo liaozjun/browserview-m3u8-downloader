@@ -6,6 +6,7 @@ export class PlayJi{
     url:string
     status:DownloadStatus
     gId:number
+    groupName:string
     folder_name:string
     reportsProgress:string
     constructor(){
@@ -15,6 +16,7 @@ export class PlayJi{
         this.url=''
         this.status = DownloadStatus.Normal_
         this.gId = 0
+        this.groupName = ''
         this.folder_name= ''
         this.reportsProgress = ''
     }

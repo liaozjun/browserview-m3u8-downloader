@@ -1,6 +1,6 @@
 {
-  "name": "browserview-m3u8-downloader",
-  "version": "0.0.1b",
+  "name": "bvm3u8downloader",
+  "version": "0.0.2",
   "main": "dist-electron/main/index.js",
   "description": "自己用",
   "author": "自己用",
@@ -37,6 +37,7 @@
   "dependencies": {
     "ant-design-vue": "^3.2.15",
     "dplayer": "^1.27.1",
+    "fluent-ffmpeg": "^2.1.2",
     "hls.js": "^1.3.2",
     "lodash": "^4.17.21",
     "m3u8-parser": "^6.0.0",

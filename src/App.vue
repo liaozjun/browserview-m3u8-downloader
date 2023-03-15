@@ -6,22 +6,27 @@
                 <menu-fold-outlined v-else class="trigger" />
                 抽屉
             </a-menu-item>
-            <a-sub-menu key="tool">
+            <!-- <a-sub-menu key="tool">
                 <template #icon>
                     <tool-outlined />
                 </template>
                 <template #title>工具</template>
                 <a-menu-item-group title="转换">
-                    <a-menu-item key="tool:1" disabled>MP4</a-menu-item>
-                    <!-- <a-menu-item key="setting:2">Option 2</a-menu-item> -->
+                    <a-menu-item key="tool:1" disabled>MP4</a-menu-item> 
                 </a-menu-item-group>
-            </a-sub-menu>
+            </a-sub-menu> -->
+            <!-- <a-menu-item key="import" @click="onClickImport">
+                <template #icon>
+                    <import-outlined />
+                </template>
+                导入
+            </a-menu-item> -->
             <a-menu-item key="setting" @click="onClickModelSetting">
                 <template #icon>
                     <setting-outlined />
                 </template>
                 设置
-            </a-menu-item>            
+            </a-menu-item>
         </a-menu>
 
         <a-tabs size="large" v-model:activeKey="activeKey" type="editable-card" @edit="onEdit" @change="onChange" :tabBarStyle="{margin:0}">
@@ -31,10 +36,10 @@
                         <a-layout-sider v-model:collapsed="layoutSiderCollapsed" collapsedWidth="0" style="background: white;" width="30%">
                             <a-tabs v-model:activeKey="menuTabActiveKey" :tabBarStyle="{margin:'0px'}" size="small" type="card">
                                 <a-tab-pane key="pane:download" tab="下载">
-                                    <a-space size="0">
-                                        <a-button type="Default" size="small" @click="onClickRefresh">刷新</a-button>
+                                     
+                                        <a-button type="Default" block size="small" @click="onClickRefresh">刷新</a-button>
                                         <!-- <a-button size="small">新建分组</a-button> -->
-                                    </a-space>
+                                    
                                     <a-menu v-model:selectedKeys="selectedPlayData" style="height:calc(100vh - 46px - 40px - 36px - 24px);background: white;overflow: auto;overflow-y:auto;" mode="inline">
                                         <a-menu-item v-for="item in playList" :key="item.id" @click="onPlayDataClick(item)"
                                         style="width: calc(100%);">
@@ -82,7 +87,7 @@
  
     import { defineComponent, onBeforeUnmount, onMounted, createVNode, ref,reactive, } from 'vue'
     import { ToolOutlined, ReloadOutlined, SettingOutlined, EditOutlined,ExclamationCircleOutlined,
-        MenuFoldOutlined,
+        MenuFoldOutlined,ImportOutlined,
         MenuUnfoldOutlined} from '@ant-design/icons-vue'
     import MyBrowserView from './components/MyBrowserView.vue'
     const _ = require('lodash')
@@ -113,6 +118,7 @@
             ReloadOutlined,
             MenuFoldOutlined,
             MenuUnfoldOutlined,
+            ImportOutlined,
             MyBrowserView,
             ModalPlayDataEdit,
             ModalSetting,
@@ -344,6 +350,10 @@
             //const playDataEditVisiable = ref<boolean>(false)
             const playDataEditViewModel = ref<PlayDataEditViewModel>(new PlayDataEditViewModel())
             const modalSettingViewModel = ref<ModalSettingViewModel>(new ModalSettingViewModel())
+
+            const onClickImport = ()=>{
+
+            }
             return {
                 playList,
                 panes,
@@ -352,7 +362,8 @@
                 onChange,
                 topMenuCurrent,
                 onClickModelSetting,
-                
+                onClickImport,
+
                 modalSettingViewModel,
 
                 playM3u8Url,
