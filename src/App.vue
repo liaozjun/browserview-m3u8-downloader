@@ -1,17 +1,26 @@
 <template>
     <div>
-        <a-menu v-model:selectedKeys="topMenuCurrent" mode="horizontal" :disabled="activeKey !== '1'">             
-            <a-sub-menu key="tool">
+        <a-menu v-model:selectedKeys="topMenuCurrent" mode="horizontal" :disabled="activeKey !== '1'">
+            <a-menu-item key="drawer" @click="() => (layoutSiderCollapsed = !layoutSiderCollapsed)" >
+                <menu-unfold-outlined v-if="layoutSiderCollapsed" class="trigger" />
+                <menu-fold-outlined v-else class="trigger" />
+                抽屉
+            </a-menu-item>
+            <!-- <a-sub-menu key="tool">
                 <template #icon>
                     <tool-outlined />
                 </template>
                 <template #title>工具</template>
                 <a-menu-item-group title="转换">
-                    <a-menu-item key="tool:1" disabled>MP4</a-menu-item>
-                    <!-- <a-menu-item key="setting:2">Option 2</a-menu-item> -->
+                    <a-menu-item key="tool:1" disabled>MP4</a-menu-item> 
                 </a-menu-item-group>
-                
-            </a-sub-menu>
+            </a-sub-menu> -->
+            <!-- <a-menu-item key="import" @click="onClickImport">
+                <template #icon>
+                    <import-outlined />
+                </template>
+                导入
+            </a-menu-item> -->
             <a-menu-item key="setting" @click="onClickModelSetting">
                 <template #icon>
                     <setting-outlined />
@@ -20,32 +29,37 @@
             </a-menu-item>
         </a-menu>
 
-        <a-tabs  v-model:activeKey="activeKey" type="editable-card" @edit="onEdit" @change="onChange" :tabBarStyle="{margin:0}">
-            <template v-for="pane in panes" :key="pane.key">
+        <a-tabs size="large" v-model:activeKey="activeKey" type="editable-card" @edit="onEdit" @change="onChange" :tabBarStyle="{margin:0}">
+            <template v-for="pane in panes" :key="pane.tabKey">
                 <a-tab-pane  v-if="pane.tabKey === '1'" :key="pane.tabKey" :tab="pane.title" :closable="pane.closable">
                     <a-layout style="height:calc(100vh - 46px - 40px)">
-                        <a-layout-sider  style="background: none;overflow: auto;overflow-y:auto;" width="268">
-                            <a-row justify="end"> 
-                                <a-button type="default" :span="24" @click="onClickRefresh">
-                                    <template #icon>
-                                        <ReloadOutlined />
-                                    </template>刷新
-                                </a-button>
-                            </a-row>
-                            <a-menu v-model:selectedKeys="selectedPlayData"  mode="inline">
-                                <a-menu-item v-for="item in playList" :key="item.id" @click="onPlayDataClick(item)">
-                                    <a-dropdown :trigger="['contextmenu']">
-                                        <span>{{ item.name }}</span>
-                                        <template #overlay>
-                                          <a-menu>
-                                            <a-menu-item key="1" @click="onPlayDataEditClick(item)">编辑</a-menu-item>
-                                            <a-menu-item key="2" @click="onPlayDataDelClick(item)">删除</a-menu-item>
-                                            <!-- <a-menu-item key="3">3rd menu item</a-menu-item>  -->
-                                          </a-menu>
-                                        </template>
-                                    </a-dropdown>
-                                </a-menu-item>
-                            </a-menu>
+                        <a-layout-sider v-model:collapsed="layoutSiderCollapsed" collapsedWidth="0" style="background: white;" width="30%">
+                            <a-tabs v-model:activeKey="menuTabActiveKey" :tabBarStyle="{margin:'0px'}" size="small" type="card">
+                                <a-tab-pane key="pane:download" tab="下载">
+                                     
+                                        <a-button type="Default" block size="small" @click="onClickRefresh">刷新</a-button>
+                                        <!-- <a-button size="small">新建分组</a-button> -->
+                                    
+                                    <a-menu v-model:selectedKeys="selectedPlayData" style="height:calc(100vh - 46px - 40px - 36px - 24px);background: white;overflow: auto;overflow-y:auto;" mode="inline">
+                                        <a-menu-item v-for="item in playList" :key="item.id" @click="onPlayDataClick(item)"
+                                        style="width: calc(100%);">
+                                            <a-dropdown :trigger="['contextmenu']">
+                                                <span>{{ item.name }}</span>
+                                                <template #overlay>
+                                                  <a-menu>
+                                                    <a-menu-item :key="`${item.id}:edit`" @click="onPlayDataEditClick(item)">编辑</a-menu-item>
+                                                    <a-menu-item :key="`${item.id}:delete`" @click="onPlayDataDelClick(item)">删除</a-menu-item>                                                     
+                                                  </a-menu>
+                                                </template>
+                                            </a-dropdown>
+                                        </a-menu-item>
+                                    </a-menu>
+                                </a-tab-pane>
+                                <a-tab-pane key="pane:import" tab="导入">
+                                    <MenuImportPanel :title="'非取'" :onPlayData="playM3u8Url"></MenuImportPanel>                                   
+                                </a-tab-pane>
+                                <!-- <a-tab-pane key="3" tab="Tab 3">Content of Tab Pane 3</a-tab-pane> -->
+                            </a-tabs>                            
                         </a-layout-sider>
                         <a-layout>                           
                             <a-layout-content>
@@ -64,31 +78,17 @@
                 </a-tab-pane>
             </template>
         </a-tabs> 
-        <a-modal v-model:visible="modalSettingVisiable" title="设置"  :footer="null">
-            <a-form 
-                :model="formState"                
-                :label-col="{ span: 8 }"
-                :wrapper-col="{ span: 16 }"
-                autocomplete="off"
-                @finish="onFinish"
-                @finishFailed="onFinishFailed"
-            >
-                <a-form-item label="同时发起" name="同时发起" >
-                    <a-input-number v-model:value="formState.requestTsCountPreM3u8" :min="1" :max="10" />个请求下载TS文件/每个m3u8                
-                </a-form-item>
-                <a-form-item :wrapper-col="{ offset: 8, span: 16 }">
-                <a-button type="primary" html-type="submit">保存</a-button>
-                </a-form-item>
-            </a-form>
-           
-        </a-modal>
-        <PlayDataEdit :playDataEditViewModel="playDataEditViewModel"></PlayDataEdit>
+        
+        <ModalSetting :modalSettingViewModel="modalSettingViewModel" ></ModalSetting>
+        <ModalPlayDataEdit :playDataEditViewModel="playDataEditViewModel"></ModalPlayDataEdit>
     </div>
 </template>
 <script lang="ts">
  
-    import { defineComponent, onBeforeUnmount, onMounted, createVNode, ref,reactive,toRaw } from 'vue'
-    import { ToolOutlined, ReloadOutlined, SettingOutlined, EditOutlined,ExclamationCircleOutlined} from '@ant-design/icons-vue'
+    import { defineComponent, onBeforeUnmount, onMounted, createVNode, ref,reactive, } from 'vue'
+    import { ToolOutlined, ReloadOutlined, SettingOutlined, EditOutlined,ExclamationCircleOutlined,
+        MenuFoldOutlined,ImportOutlined,
+        MenuUnfoldOutlined} from '@ant-design/icons-vue'
     import MyBrowserView from './components/MyBrowserView.vue'
     const _ = require('lodash')
     import {TabPaneDto} from './BrowserViewDomain/Dtos/TabPaneDto'
@@ -100,16 +100,29 @@
     const DPlayer = require('dplayer')
     import { message,Modal } from 'ant-design-vue'
     import type { SizeType } from 'ant-design-vue/es/config-provider';
-    import PlayDataEdit from './components/PlayDataEdit.vue'
+
+    import MenuImportPanel from './components/MenuImportPanel.vue'
+
+    import ModalPlayDataEdit from './components/ModalPlayDataEdit.vue'
     import {PlayDataEditViewModel} from './Dtos/PlayDataEditViewModel'
+
+    import ModalSetting from './components/ModalSetting.vue'
+    import {ModalSettingViewModel} from './Dtos/ModalSettingViewModel'
+
+    import {Utils} from './Utils'
     export default defineComponent({
         components: {
             ToolOutlined,
             SettingOutlined,
             EditOutlined,
             ReloadOutlined,
+            MenuFoldOutlined,
+            MenuUnfoldOutlined,
+            ImportOutlined,
             MyBrowserView,
-            PlayDataEdit,
+            ModalPlayDataEdit,
+            ModalSetting,
+            MenuImportPanel,
         },
         setup() {
             let dp:any = null
@@ -120,11 +133,8 @@
             const activeKey = ref(panes.value[0].tabKey);
         
             const topMenuCurrent = ref<string[]>(['tool']);
-            const modalSettingVisiable = ref(false)
-            const formState = reactive<Setting>({
-                requestTsCountPreM3u8:5
-            });
-
+           
+            
             onBeforeUnmount(function(){
                 dp.destroy();
                 console.log('beforeDestroy end');
@@ -197,7 +207,7 @@
 
                 ipcRenderer.invoke('get-setting',null).then((result:Setting)=>{
                     //console.log('get-setting result ',result)
-                    formState.requestTsCountPreM3u8 = result.requestTsCountPreM3u8                    
+                    modalSettingViewModel.value.settingForm.requestTsCountPreM3u8 = result.requestTsCountPreM3u8                    
                 }).catch((err:any)=>{
                     //console.log('get-setting err ',err);
                     message.error(JSON.stringify(err))
@@ -218,7 +228,8 @@
         
             const add = async () => {
                 try{
-                    let guid = await ipcRenderer.invoke('GetGuid',null)                   
+                    //let guid = await ipcRenderer.invoke('GetGuid',null)
+                    let guid:string = await Utils.GetGuid()
                     let tabkey:string = `MyNewTabPane_${guid}`
                     let tabPane:TabPaneDto = new TabPaneDto('新标签页',tabkey ,0,'http://localhost:9001/Index',true)
                     let result = await ipcRenderer.invoke('add-browserview', tabPane)                 
@@ -292,6 +303,9 @@
             const onPlayDataClick = (playData:PlayDataDto) =>{                
                 let url = `http://localhost:9001/${playData.folder_name}/index.m3u8`
                // console.log('onPlayDataClick',url,playData)
+               playM3u8Url(url)
+            }
+            const playM3u8Url = (url:string) =>{
                 dp.switchVideo({
                     url: url,
                 });
@@ -325,26 +339,21 @@
                 });
             }
             
-            const onClickModelSetting = ()=>{
-                modalSettingVisiable.value = true;
-            }
-            
-            const onFinish = async (values: any) => {
-                try{
-                    let result = await ipcRenderer.invoke('save-setting',toRaw(formState))                    
-                    console.log('save-setting',result)
-                    message.success('保存成功')
-                    modalSettingVisiable.value = false                     
-                }catch(err:any){
-                    message.error(err.message)
-                }
+            const onClickModelSetting = ()=>{                
+                modalSettingViewModel.value.visiable = true
             }
 
-            const onFinishFailed = (errorInfo: any) => {
-                console.log('Failed:', errorInfo);
-            }
+            const layoutSiderCollapsed = ref<boolean>(false)
+            // const onClickTest = ()=>{
+            //     layoutSiderCollapsed.value = !layoutSiderCollapsed.value
+            // }
             //const playDataEditVisiable = ref<boolean>(false)
             const playDataEditViewModel = ref<PlayDataEditViewModel>(new PlayDataEditViewModel())
+            const modalSettingViewModel = ref<ModalSettingViewModel>(new ModalSettingViewModel())
+
+            const onClickImport = ()=>{
+
+            }
             return {
                 playList,
                 panes,
@@ -353,22 +362,26 @@
                 onChange,
                 topMenuCurrent,
                 onClickModelSetting,
-                modalSettingVisiable,
-               
+                onClickImport,
+
+                modalSettingViewModel,
+
+                playM3u8Url,
                 onPlayDataClick,
                 onPlayDataEditClick,
                 onPlayDataDelClick,
                 playDataEditViewModel,
+                
                 //playDataEdit,
                 //playDataEditVisiable,
-                onClickRefresh,
-
-                formState,
-                onFinish,
-                onFinishFailed,
+                onClickRefresh,               
 
                 selectedPlayData: ref<string[]>([]),
                 size: ref<SizeType>('small'),
+                menuTabActiveKey: ref('pane:download'),
+
+                //onClickTest,
+                layoutSiderCollapsed,
             };
         },
     });

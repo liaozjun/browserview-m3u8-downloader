@@ -1,4 +1,5 @@
 import _ from 'lodash'
+import {DownloadStatus} from '../../Enums/DownloadStatus'
 export class M3u8Data{
     
     manifest:any;
@@ -173,10 +174,4 @@ class TsDownloadInfo{
     Downloading_():void{
         this.status = DownloadStatus.Downloading_;
     }
-}
-enum DownloadStatus {
-    Normal_ = 0,
-    Finish_,
-    Downloading_,
-    Error_
 }
