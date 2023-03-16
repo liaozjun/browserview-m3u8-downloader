@@ -3,7 +3,7 @@
 
 如何使用:
 
-1.增加页签,输入地址,点击下载。
+1.增加页签,输入地址,点击下载(无需设置自定义头)。
 ![image](https://user-images.githubusercontent.com/12792054/219934675-07f108d5-6ce2-42ef-a766-136a357b7ef2.png)
 
 
