@@ -57,78 +57,64 @@ export class TaskM3u8Dto extends ePlayJi {
             let lom3u8filepath:string = `${dir}index.m3u8`
 
             let is_lm3u8Exist = fs.statSync(lom3u8filepath,{throwIfNoEntry :false})
-            if(is_lm3u8Exist == undefined){//不存在下载            
-                mainWin.webContents.send('_WorkerReportsBeforeProgress',{
-                    PlayJigId: self.gId,
-                    PlayJiId: self.id,
-                    success:false,message:'下载解析中1'
-                })
+            //if(is_lm3u8Exist == undefined){//不存在下载            
+            mainWin.webContents.send('_WorkerReportsBeforeProgress',{
+                PlayJigId: self.gId,
+                PlayJiId: self.id,
+                success:false,message:'下载解析中1'
+            })
+        
+            let result:DownloadFileResult = await self._downloadFilePromise(-1,self.url)
+            var txt = _.toString(result.blob);           
+            parser = new Parser();
+            parser.push(txt);
+            parser.end();
             
-                let result:DownloadFileResult = await self._downloadFilePromise(-1,self.url)
-                var txt = _.toString(result.blob);           
-                parser = new Parser();
-                parser.push(txt);
-                parser.end();
-                
-                if(_.hasIn(parser.manifest,'playlists') && 
-                    _.isArray(parser.manifest.playlists) && 
-                    parser.manifest.playlists.length != 0
-                ){
-                    let plurl = parser.manifest.playlists[0].uri;                
-                    if(_.startsWith(plurl,'/')){
-                        plurl = `${urlObj.origin}${plurl}`
-                    }else{
-                        plurl = `${preurl}${plurl}`
-                    }
-                    mainWin.webContents.send('_WorkerReportsBeforeProgress',{
-                        PlayJigId: self.gId,
-                        PlayJiId: self.id,
-                        success:false,message:'下载解析中2'
-                    })
-                    let presult:DownloadFileResult = await self._downloadFilePromise(-1,plurl);
-                    var txt = _.toString(presult.blob);  
-                    parser = new Parser();
-                    parser.push(txt);
-                    parser.end();
-                    //console.log(parser.manifest);
+            if(_.hasIn(parser.manifest,'playlists') && 
+                _.isArray(parser.manifest.playlists) && 
+                parser.manifest.playlists.length != 0
+            ){
+                let plurl = parser.manifest.playlists[0].uri;                
+                if(_.startsWith(plurl,'/')){
+                    plurl = `${urlObj.origin}${plurl}`
+                }else{
+                    plurl = `${preurl}${plurl}`
                 }
-                if(parser != null && _.hasIn(parser.manifest,'segments') && 
-                    _.isArray(parser.manifest.segments) && 
-                    parser.manifest.segments.length != 0){                    
-                        //await fsPromise.writeFile(om3u8filepath, txt)
-                        let lm3u8filepathtxt = Utils.DumpM3u8Index(parser.manifest)
-                        await fsPromise.writeFile(lom3u8filepath, lm3u8filepathtxt)
-                }
-            }else{//存在
                 mainWin.webContents.send('_WorkerReportsBeforeProgress',{
                     PlayJigId: self.gId,
                     PlayJiId: self.id,
-                    success:false,message:'读取解析中'
+                    success:false,message:'下载解析中2'
                 })
-                let txt = fs.readFileSync(lom3u8filepath,{encoding:'utf-8'})
+                let presult:DownloadFileResult = await self._downloadFilePromise(-1,plurl);
+                var txt = _.toString(presult.blob);  
                 parser = new Parser();
                 parser.push(txt);
                 parser.end();
+                //console.log(parser.manifest);
             }
+            if(parser != null && _.hasIn(parser.manifest,'segments') && 
+                _.isArray(parser.manifest.segments) && 
+                parser.manifest.segments.length != 0){                    
+                    //await fsPromise.writeFile(om3u8filepath, txt)
+                    let lm3u8filepathtxt = Utils.DumpM3u8Index(parser.manifest)
+                    await fsPromise.writeFile(lom3u8filepath, lm3u8filepathtxt)
+            }
+            // }else{//存在
+            //     mainWin.webContents.send('_WorkerReportsBeforeProgress',{
+            //         PlayJigId: self.gId,
+            //         PlayJiId: self.id,
+            //         success:false,message:'读取解析中'
+            //     })
+            //     let txt = fs.readFileSync(lom3u8filepath,{encoding:'utf-8'})
+            //     parser = new Parser();
+            //     parser.push(txt);
+            //     parser.end();
+            // }
             if(parser != null && _.hasIn(parser.manifest,'segments') && 
                 _.isArray(parser.manifest.segments) && 
                 parser.manifest.segments.length != 0){
 
                 _.remove(self.playTsDtoList,p=>true)
-                //本地m3u8
-                _.forEach(parser.manifest.segments,seg=>{
-                    var fileName = Utils.GetFileName(seg.uri)
-                    let ts:M3u8TsDto  = new M3u8TsDto()
-                    ts.name = fileName
-                    ts.status = DownloadStatus.Normal_
-                    ts.path =`${dir}${fileName}`
-                    if(_.startsWith(seg.uri,'/')){//绝对路径              
-                        ts.url = `${urlObj.origin}${seg.uri}`
-                    }else{//相对路径
-                        ts.url = `${preurl}${seg.uri}`
-                    }
-                    self.playTsDtoList.push(ts)
-                })
                 //如果有加密 生成key任务
                 let fseg  = parser.manifest.segments[0];
                 if(_.hasIn(fseg,'key')){
@@ -144,6 +130,22 @@ export class TaskM3u8Dto extends ePlayJi {
                     }
                     self.playTsDtoList.push(keyfile)
                 }
+
+                //本地m3u8
+                _.forEach(parser.manifest.segments,seg=>{
+                    var fileName = Utils.GetFileName(seg.uri)
+                    let ts:M3u8TsDto  = new M3u8TsDto()
+                    ts.name = fileName
+                    ts.status = DownloadStatus.Normal_
+                    ts.path =`${dir}${fileName}`
+                    if(_.startsWith(seg.uri,'/')){//绝对路径              
+                        ts.url = `${urlObj.origin}${seg.uri}`
+                    }else{//相对路径
+                        ts.url = `${preurl}${seg.uri}`
+                    }
+                    self.playTsDtoList.push(ts)
+                })
+                
                 self.tsCount = self.playTsDtoList.length
                 //文件那个未下载
 
