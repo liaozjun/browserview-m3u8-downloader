@@ -16,5 +16,5 @@
 
 增加导入列表ffmpeg合拼ts导出MP4。
 
-下载zy文件夹压缩包，解压导入列表(https://www.123pan.com/s/oyUbVv-2ghFd.html)。
+下载zy文件夹压缩包，解压导入列表( https://www.123pan.com/s/oyUbVv-2ghFd.html )。
 ![image](https://user-images.githubusercontent.com/12792054/225645257-36aaa47b-aef7-4338-8cc7-55d41562f6f8.png)
