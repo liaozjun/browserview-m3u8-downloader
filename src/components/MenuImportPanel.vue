@@ -1,16 +1,19 @@
 <template>
     <div>
         <!-- <a-space size="0"> -->
-            <a-button type="Default" block :loading="importBtn.loading" size="small"  @click="onClickImport">{{importBtn.txt}}</a-button>
+            <!-- <a-button type="Default" block :loading="importBtn.loading" size="small"  @click="onClickImport">{{importBtn.txt}}</a-button> -->
              <!-- <a-button size="small" @click="testClick">Default</a-button> -->
             <!--<a-button type="Default" size="small">Dashed</a-button>
             <a-button type="Default" size="small">Link</a-button> -->
         <!-- </a-space> -->
     </div>
-    <a-menu v-model:selectedKeys="selectedPlayData" style="height:calc(100vh - 46px - 40px - 36px - 24px);background: white;overflow: auto;overflow-y:auto;" mode="inline">
-        <a-sub-menu v-for="pjGroup in playJiGroupList" :key="`import:${pjGroup.id}`"  @titleClick="titleClick(pjGroup)">
+    <a-menu v-model:selectedKeys="selectedPlayData" 
+        style="height:calc(100vh - 46px - 40px - 36px - 24px);background: white;overflow: auto;overflow-y:auto;"
+        mode="inline"
+    >
+        <a-sub-menu style="width:calc(99%);" v-for="pjGroup in playJiGroupList" :key="`import:${pjGroup.id}`"  @titleClick="titleClick(pjGroup)">
             <template #icon>
-            <AppstoreOutlined />
+                <AppstoreOutlined />
             </template>
             <template #title>
                 <a-dropdown :trigger="['contextmenu']">
@@ -26,12 +29,13 @@
                     </template>
                 </a-dropdown>
             </template>
-            <a-menu-item v-for="pj in pjGroup.playJiList" :key="`import:${pjGroup.id}:${pj.id}`" @click="onPlayDataClick(pj)"
-                style="width: calc(100%);">
+            <a-menu-item  v-for="pj in pjGroup.playJiList" :key="`import:${pjGroup.id}:${pj.id}`" @click="onPlayDataClick(pj)"
+                style="width: calc(100%); padding:0px;margin:0px;line-height:34px;height:34px;">
                 <a-dropdown :trigger="['contextmenu']">
                     <div>
-                        <a-typography-text :type="playJiTitle(pj)">{{ pj.name }}</a-typography-text>
-                        <a-typography-text style="margin-left:10px;"  type="secondary">{{pj.reportsProgress}}</a-typography-text>
+                        <a-button type="dashed" block>{{pj.name}}</a-button>
+                        <!-- <a-typography-text :type="playJiTitle(pj)">{{ pj.name }}</a-typography-text>
+                        <a-typography-text style="margin-left:10px;"  type="secondary">{{pj.reportsProgress}}</a-typography-text> -->
                     </div> 
                     <template #overlay>
                         <a-menu>
@@ -39,7 +43,7 @@
                             <a-menu-item :key="`import:${pjGroup.id}:${pj.id}:cancel`" @click="onClickCancel(pj)">取消下载</a-menu-item>
                             <a-menu-item :key="`import:${pjGroup.id}:${pj.id}:edit`" @click="onClickEdit(pj)">编辑</a-menu-item>
                             <a-menu-item :key="`import:${pjGroup.id}:${pj.id}:delete`" @click="onClickDelete(pj)">删除</a-menu-item>
-                            <a-menu-item :disabled="ComputedCombineTsMenuItemDisabled(pj)" :key="`import:${pjGroup.id}:${pj.id}:delete`" @click="onClickCombineTs(pj)">合拼mp4</a-menu-item>
+                            <a-menu-item :disabled="ComputedCombineTsMenuItemDisabled(pj)" :key="`import:${pjGroup.id}:${pj.id}:combine_ts`" @click="onClickCombineTs(pj)">合拼mp4</a-menu-item>
                         </a-menu>
                     </template>
                 </a-dropdown>
@@ -76,8 +80,8 @@
     import { PlayJiGroup } from '../Dtos/PlayJiGroup'
     import { DownloadStatus } from '../Enums/DownloadStatus'
     import {combine_ts_mp4_reply} from '../Dtos/combine_ts_mp4_reply'
-    var moment = require('moment');
-    import * as fs from 'node:fs'
+    import Emitter from '../Mitt'
+    var moment = require('moment')
     const _ = require('lodash')
     export default defineComponent({
         name: 'MenuImportPanel',        
@@ -88,35 +92,34 @@
             onPlayData:{
                 type:Function,
                 require:true,
+            },
+            playJiGroupList:{
+                type:Array<PlayJiGroup>,
+                require:true
             }
         },
         components:{
             AppstoreOutlined
         },
         setup(props){
+            const importBtn = reactive<ImportBtn>(new ImportBtn()) 
+            const defaultEditViewModel = reactive<DefaultEditViewModel>(new DefaultEditViewModel())
+
             onMounted(async  function(){
-                let ret:Array<PlayJiGroup> = await Utils.GetPlayJiGroupList();
-                _.forEach(ret,(item:PlayJiGroup)=>{
-                    let pjGroup:PlayJiGroup = new PlayJiGroup()
-                    pjGroup.id = item.id
-                    pjGroup.code = item.code
-                    pjGroup.name = item.name
-                    pjGroup.pId = item.pId
-                    playJiGroupList.value.push(pjGroup)
-                })
+                
                 ipcRenderer.on('_WorkerReportsBeforeProgress',(event,args:{
                     PlayJigId: number,
                     PlayJiId: number,
                     success:boolean,
                     message:string
                 })=>{
-                    let group:PlayJiGroup = _.find(playJiGroupList.value,(g:PlayJiGroup)=>g.id==args.PlayJigId)
-                    if(group != undefined){
-                        let ji:PlayJi = _.find(group.playJiList,(ji:PlayJi)=>ji.id == args.PlayJiId)
-                        if(ji != undefined){
-                            ji.reportsProgress = args.message
-                        }
-                    }
+                    // let group:PlayJiGroup = _.find(playJiGroupList.value,(g:PlayJiGroup)=>g.id==args.PlayJigId)
+                    // if(group != undefined){
+                    //     let ji:PlayJi = _.find(group.playJiList,(ji:PlayJi)=>ji.id == args.PlayJiId)
+                    //     if(ji != undefined){
+                    //         ji.reportsProgress = args.message
+                    //     }
+                    // }
                 })
                 ipcRenderer.on('_WorkerReportsProgress',(event,args:{PlayJigId: number,
                     PlayJiId: number,
@@ -126,84 +129,53 @@
                     downloadingTsCount:number,
                     errorTsCount:number})=>{
                     // console.log(args)
-                    let group:PlayJiGroup = _.find(playJiGroupList.value,(g:PlayJiGroup)=>g.id==args.PlayJigId)
-                    if(group != undefined){
-                        let ji:PlayJi = _.find(group.playJiList,(ji:PlayJi)=>ji.id == args.PlayJiId)
-                        if(ji != undefined){
-                            ji.reportsProgress = `完成:${args.finishTsCount},下载:${args.downloadingTsCount},错误:${args.errorTsCount},共:${args.tsCount}`
+                    // let group:PlayJiGroup = _.find(playJiGroupList.value,(g:PlayJiGroup)=>g.id==args.PlayJigId)
+                    // if(group != undefined){
+                    //     let ji:PlayJi = _.find(group.playJiList,(ji:PlayJi)=>ji.id == args.PlayJiId)
+                    //     if(ji != undefined){
+                    //         ji.reportsProgress = `完成:${args.finishTsCount},下载:${args.downloadingTsCount},错误:${args.errorTsCount},共:${args.tsCount}`
 
-                            if(args.normalTsCount == 0 && args.downloadingTsCount == 0){
-                                let statusTmp:DownloadStatus = DownloadStatus.Finish_
-                                if(args.errorTsCount != 0 ){
-                                    statusTmp = DownloadStatus.Error_
-                                    ji.reportsProgress = `完成:${args.finishTsCount},下载:${args.downloadingTsCount},错误:${args.errorTsCount},共:${args.tsCount},(右键下载错误Ts)`
-                                }
-                                Utils.UpdatePlayJiStatus(ji.id, statusTmp)
-                                ji.status = statusTmp
-                            }
-                        }
+                    //         if(args.normalTsCount == 0 && args.downloadingTsCount == 0){
+                    //             let statusTmp:DownloadStatus = DownloadStatus.Finish_
+                    //             if(args.errorTsCount != 0 ){
+                    //                 statusTmp = DownloadStatus.Error_
+                    //                 ji.reportsProgress = `完成:${args.finishTsCount},下载:${args.downloadingTsCount},错误:${args.errorTsCount},共:${args.tsCount},(右键下载错误Ts)`
+                    //             }
+                    //             Utils.UpdatePlayJiStatus(ji.id, statusTmp)
+                    //             ji.status = statusTmp
+                    //         }
+                    //     }
                         
-                    }
+                    // }
                 })
                 ipcRenderer.on('combine_ts_mp4_reply',(event,args:combine_ts_mp4_reply)=>{
-                    let group:PlayJiGroup = _.find(playJiGroupList.value,(g:PlayJiGroup)=>g.id == args.playJiGroupId)
-                    if(group != undefined){
-                        let ji:PlayJi = _.find(group.playJiList,(ji:PlayJi)=>ji.id == args.playJiId)
-                        if(ji != undefined){
-                            if(args.isEnd){
-                                ji.reportsProgress = '转换结束'
-                                if(args.isError){
-                                    ji.reportsProgress = args.message
-                                }
-                            }else{
-                                ji.reportsProgress = '转换中'
-                            }
-                        }
-                    }
-                    if(args.isEnd && !_.isEmpty(args.openDir)){
-                        //fs.opendirSync(args.openDir)
-                        //这里测试
-                        ipcRenderer.invoke('openDir',args.openDir)
-                    }
+                    // let group:PlayJiGroup = _.find(playJiGroupList.value,(g:PlayJiGroup)=>g.id == args.playJiGroupId)
+                    // if(group != undefined){
+                    //     let ji:PlayJi = _.find(group.playJiList,(ji:PlayJi)=>ji.id == args.playJiId)
+                    //     if(ji != undefined){
+                    //         if(args.isEnd){
+                    //             ji.reportsProgress = '转换结束'
+                    //             if(args.isError){
+                    //                 ji.reportsProgress = args.message
+                    //             }
+                    //         }else{
+                    //             ji.reportsProgress = '转换中'
+                    //         }
+                    //     }
+                    // }
+                    // if(args.isEnd && !_.isEmpty(args.openDir)){
+                    //     //fs.opendirSync(args.openDir)
+                    //     //这里测试
+                    //     ipcRenderer.invoke('openDir',args.openDir)
+                    // }
                 })
             })
-            const importBtn = reactive<ImportBtn>(new ImportBtn())
-            const playJiGroupList = ref<PlayJiGroup[]>([])
-            const defaultEditViewModel = reactive<DefaultEditViewModel>(new DefaultEditViewModel())
-
-            const handleOk = ()=>{                
+            
+            const handleOk = ()=>{ 
             }
-            const onClickImport = async()=>{
-                try{
-                    importBtn.import()
-                    //带出名字
-                    let ret:{basename:string,playList:Array<PlayJi>} = await ipcRenderer.invoke('showOpenDialog',null)
-                    if(ret != null){
-                        let seq = moment().format("YYYYMMDDHHmmss")
-                        let basename = ret.basename.split('.')[0]
-                        let playJiGroup:PlayJiGroup = await Utils.InsertPlayJiGroup(`${basename}_${seq}`,basename)
-                        await Promise.all(ret.playList.map( async item => {                        
-                            let playJi = new PlayJi();
-                            playJi.gId = playJiGroup.id
-                            playJi.name = item.name
-                            playJi.player = item.player
-                            playJi.url = item.url
-                            playJi.folder_name = await Utils.GetGuid()
-                            await Utils.InsertPlayJi(playJi)
-                            playJiGroup.playJiList.push(playJi)
-                        }))
-                        playJiGroupList.value.push(playJiGroup)
-                        playJiGroupList.value = _.orderBy(playJiGroupList.value, ['id'], ['desc'])
-                    }
-                }catch(err){
-                    message.error(JSON.stringify(err))
-                    
-                }finally{
-                    importBtn.importEnd();
-                }
-            }
-            const testClick = async ()=>{               
-                //playJiList.value[0].name = '11231'
+             
+            const testClick = async ()=>{ 
+                Emitter.emit('foo',"fooooooo")
             }
             const titleClick = async (pjGroup: PlayJiGroup) => {
                 if(pjGroup.playJiList.length == 0){
@@ -251,7 +223,7 @@
                         }
                         let effrow = await Utils.DeletePlayJiGroup(pjGroup.id);
                         if(effrow > 0){
-                            _.remove(playJiGroupList.value,(g:PlayJiGroup)=>g.id == pjGroup.id)
+                           _.remove(props.playJiGroupList,(g:PlayJiGroup)=>g.id == pjGroup.id)
                             message.success('删除成功');
                         }
                     },
@@ -277,7 +249,7 @@
                         await ipcRenderer.invoke('DeleteDir',{folder_name:pj.folder_name})
                         let ret = await Utils.DeletePlayJi(pj.id)
                         if(ret >0){
-                            let group:PlayJiGroup = _.find(playJiGroupList.value,(g:PlayJiGroup)=>g.id==pj.gId);
+                            let group:PlayJiGroup = _.find(props.playJiGroupList,(g:PlayJiGroup)=>g.id==pj.gId);
                             if(group != undefined){
                                 _.remove(group.playJiList,(p:PlayJi)=>p.id == pj.id)
                                 message.success('删除成功');
@@ -328,12 +300,12 @@
                 return 'default'
             }
             const onClickCombineTs = (pj:PlayJi)=>{
-                let group = _.find(playJiGroupList.value,(g:PlayJiGroup) => g.id == pj.gId);
+                let group = _.find(props.playJiGroupList,(g:PlayJiGroup) => g.id == pj.gId);
                 if(group != undefined){
                     let pjTmp = toRaw(pj)
                     pjTmp.groupName = group.name;
                     ipcRenderer.invoke('combine_ts_mp4',pjTmp)
-                }                
+                }
             }
             const ComputedCombineTsMenuItemDisabled = (pj:PlayJi)=>{
                 return pj.status != DownloadStatus.Finish_
@@ -342,13 +314,11 @@
                 playJiTitle,
                 onFinish,
                 onFinishFailed,
-                importBtn,
-                playJiGroupList,
+                importBtn, 
                  
                 titleClick,
 
-                handleOk,
-                onClickImport,
+                handleOk, 
                 selectedPlayData: ref<string[]>([]),
                 testClick,
                 onPlayDataClick,

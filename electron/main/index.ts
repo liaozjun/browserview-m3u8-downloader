@@ -12,6 +12,8 @@ console.log(myplugin.Setting(JSON.stringify({ isPackaged: false, appPath:appPath
 
 let dir:string = `${process.resourcesPath}/Output/`
 _m3u8Service.DirNotExistCreate(dir)
+let downloadDir:string = `${dir}download/`
+_m3u8Service.DirNotExistCreate(downloadDir)
 let ipcMainHanleHelper:IpcMainHanleHelper = new IpcMainHanleHelper(myplugin,_m3u8Service)
 
 
@@ -85,6 +87,8 @@ async function createWindow() {
     win.maximize();
     if (process.env.VITE_DEV_SERVER_URL) { // electron-vite-vue#298
             win.loadURL(url)
+            //var d = new Date();
+            //win.loadURL(`http://localhost:5122/?c=${d}`)
             //win.loadFile(`E:/browserview-m3u8-downloader/dist/index.html`)
             // Open devTool if the app is not packaged
             win.webContents.openDevTools()

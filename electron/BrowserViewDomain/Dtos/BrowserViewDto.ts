@@ -46,7 +46,7 @@ export class BrowserViewDto {
 
         let cbound = BrowserViewMgr.mainWin.getContentBounds();        
         BrowserViewMgr.mainWin.setBrowserView(this._browserView);
-        let top = 118;
+        let top = 87+37;// 118;
         this._browserView.setBounds({ x: 0, y: top, width: cbound.width, height: cbound.height - top  })
         this._browserView.webContents.loadURL(args.url);        
         

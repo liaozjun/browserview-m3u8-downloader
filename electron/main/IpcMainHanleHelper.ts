@@ -42,6 +42,27 @@ export class IpcMainHanleHelper{
                 return null;
             }
         })
+        ipcMain.handle('showOpenDialogv1', async (event,args)=>{
+            try{
+                let ret = await dialog.showOpenDialog({ 
+                    properties: ['openFile'] ,
+                    filters: [
+                        { name: 'json', extensions: ['json'] },
+                    ]
+                })
+                if(ret.canceled){
+                    return null;             
+                }
+                let bname = npath.basename(ret.filePaths[0])
+                console.log(bname)
+                let contents = await fsPromise.readFile(ret.filePaths[0],{ encoding: 'utf8' })        
+                //let playList  = JSON.parse(contents)
+                return {basename:bname, contents:contents};
+            } catch (err) {
+                console.error(err.message);
+                return null;
+            }
+        })
         ipcMain.handle('ExecuteNonQuery',async(event,args)=>{
             return myplugin.ExecuteNonQuery(args)
         })

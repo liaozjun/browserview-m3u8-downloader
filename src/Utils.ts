@@ -2,13 +2,28 @@ import { ipcRenderer } from 'electron'
 import {PlayJi} from './Dtos/PlayJi'
 import {PlayJiGroup} from './Dtos/PlayJiGroup'
 import {DownloadStatus} from './Enums/DownloadStatus'
-var moment = require('moment');
-
+var moment = require('moment')
+import {Setting} from './Dtos/Setting'
 export class Utils{
     static async GetGuid():Promise<string>{
         let guid:string = await ipcRenderer.invoke('GetGuid',null)
         return guid;
     }
+    static async GetSetting():Promise<Setting>{
+        
+        let setting:Setting = await ipcRenderer.invoke('get-setting',null);
+        // .then((result:Setting)=>{
+        //     //console.log('get-setting result ',result)
+        //     modalSettingViewModel.value.settingForm.requestTsCountPreM3u8 = result.requestTsCountPreM3u8                    
+        // }).catch((err:any)=>{
+        //     //console.log('get-setting err ',err);
+        //     message.error(JSON.stringify(err))
+        // })
+        return setting;
+       
+    }
+
+    ////////////////////////////////////
 
     static async InsertPlayJiGroupDefault():Promise<PlayJiGroup>{
         let seq = moment().format("YYYYMMDDHHmmss");

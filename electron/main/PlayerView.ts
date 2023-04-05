@@ -22,6 +22,12 @@ export class PlayerView{
      delay = ms => new Promise((resolve, reject) => setTimeout(resolve, ms))
     async init():Promise<void>{
         let self = this;
+
+        ipcMain.handle('savefile',async (event,args)=>{
+            console.log('savefile')
+            //await fsPromise.writeFile(lom3u8filepath, lm3u8filepathtxt)
+        })
+
         let val:Setting = await this.getSettingAsync();
         PlayerView.setting.requestTsCountPreM3u8 = val.requestTsCountPreM3u8;
         ipcMain.handle('getPlayList', async (event, args) => {

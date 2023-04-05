@@ -1,32 +1,45 @@
 <template>
-    <div class="hello">     
-        <a-input-group compact>
-            
-            <a-button-group  >
-                <a-button type="primary" @click="onGoBackClick" :disabled="pane.isDownloadingM3u8">
-                    <template #icon><LeftOutlined /></template>                     
-                </a-button>
-                <a-button type="primary" @click="onGoForwardClick" :disabled="pane.isDownloadingM3u8">
-                    <template #icon><RightOutlined /></template>                     
-                </a-button>
-                <a-button type="primary" @click="onReloadClick" :disabled="pane.isDownloadingM3u8">
-                    <template #icon><ReloadOutlined /></template>                     
-                </a-button>
-            </a-button-group>
-            
-            <a-input v-model:value="pane.url" style="width: calc(40%)" />
-            <a-button type="primary" @click="onNavigationClick" :disabled="pane.isDownloadingM3u8">
-                <template #icon><ArrowRightOutlined/></template>
-            </a-button>
-
-            <a-input v-model:value="pane.title" addon-before="标题" style="width: calc(20%);margin-left:5px;"/>
-            
-            <a-button @click="OnDownloadBtnClick" :type="pane.downloadBtn.type" :disabled="pane.downloadBtn.disabled">{{pane.downloadBtn.text}}</a-button>
-             
-            <div style="font-size: xx-small;"></div>
-        </a-input-group>
-        
-    </div>
+    <a-row style="margin-top:5px;">
+        <a-col :span="10"> 
+            <a-input-group compact>
+                
+                <a-button-group  >
+                    <a-button type="text" @click="onGoBackClick" :disabled="pane.isDownloadingM3u8">
+                        <template #icon><LeftOutlined /></template>                     
+                    </a-button>
+                    <a-button type="text" @click="onGoForwardClick" :disabled="pane.isDownloadingM3u8">
+                        <template #icon><RightOutlined /></template>                     
+                    </a-button>
+                    <a-button type="text" @click="onReloadClick" :disabled="pane.isDownloadingM3u8">
+                        <template #icon><ReloadOutlined /></template>                     
+                    </a-button>
+                </a-button-group>
+                
+                <a-input v-model:value="pane.url" style="width: calc(80%)" />
+                <a-button type="text" @click="onNavigationClick" :disabled="pane.isDownloadingM3u8">
+                    <template #icon><ArrowRightOutlined/></template>
+                </a-button> 
+                
+                
+                <!-- 
+                
+                <a-button @click="OnDownloadBtnClick" :type="pane.downloadBtn.type" :disabled="pane.downloadBtn.disabled">{{pane.downloadBtn.text}}</a-button>
+                
+                <div style="font-size: xx-small;"></div> -->
+            </a-input-group>
+        </a-col>
+        <a-col :span="8">
+            <a-input-search allow-clear enter-button="下载" v-model:value="pane.title" 
+                addon-before="标题" :disabled="pane.downloadBtn.disabled"
+            />
+         
+        </a-col>
+        <a-col :span="6">
+            <a-badge count="123"  :overflow-count="10000"></a-badge>
+            <a-badge count="456" :overflow-count="10000"></a-badge>
+            <a-badge count="9999" :overflow-count="10000"></a-badge>
+        </a-col>
+    </a-row>
   </template>
   
   <script lang="ts">
